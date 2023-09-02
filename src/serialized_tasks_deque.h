@@ -122,6 +122,14 @@ int sdq_push_front(SerializedDeque *sdq, const char *title, const char *body) {
     return 0;
 }
 
+int sdq_clear(void) {
+    char *filepath = sdq_get_path();
+    if (filepath == NULL) return -1;
+    int fd = open(filepath, O_WRONLY | O_TRUNC);
+    free(filepath);
+    return close(fd);
+}
+
 /* char *get_serialized_deque(int fd, off_t nbytes) {
     char *buf = malloc(sizeof(char)*nbytes);
     if (buf == NULL || read(fd, buf, nbytes) == -1)

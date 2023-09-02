@@ -17,8 +17,15 @@ void info(const char *msg) {
 }
 
 void usage(void) {
-    puts("hola"
-         "hola");
+    puts(
+        "Usage:\n"
+        "    tododq\n"
+        "    tododq pushf\n"
+        "    tododq pushb\n"
+        "    tododq complete\n"
+        "    tododq clear\n"
+        "    tododq slide"
+    );
 }
 
 #endif

@@ -54,8 +54,21 @@ int main(int argc, char **argv) {
         check(sdq_push_front(&sdq, title, body));
         check(sdq_write(&sdq, fd));
 
+        check(close(fd));
         free(title);
         free(body);
         sdq_free(&sdq);
+    }
+
+    else if (!strcmp(argv[1], "pushb")) {
+        if (argc != 2) fail("unexpected number of arguments");
+
+        // TODO
+    }
+
+    else if (!strcmp(argv[1], "clear")) {
+        if (argc != 2) fail("unexpected number of arguments");
+
+        check(sdq_clear());
     }
 }
