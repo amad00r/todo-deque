@@ -1,3 +1,5 @@
+// hola sóc la noa i estic provant cosetes
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
