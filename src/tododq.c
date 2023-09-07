@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "serialized_tasks_deque.h"
 #include "strip.h"
@@ -8,6 +9,7 @@
 
 
 int main(int argc, char **argv) {
+    
     if (argc == 1) {
         int fd = check(sdq_rdonly_open());
 
@@ -63,7 +65,30 @@ int main(int argc, char **argv) {
     else if (!strcmp(argv[1], "pushb")) {
         if (argc != 2) fail("unexpected number of arguments");
 
-        // TODO
+        int fd = check(sdq_rdwr_open());
+
+        size_t size;
+
+        fputs("(title): ", stdout);
+        char *title = NULL;
+        check(getline(&title, &size, stdin));
+
+        puts("(body):");
+        char *body = NULL;
+        check(getdelim(&body, &size, EOF, stdin));
+
+        title = check_null(strip(title));
+        body = check_null(strip(body));
+
+        SerializedDeque sdq;
+        check(sdq_read(&sdq, fd));
+        check(sdq_push_back(&sdq, title, body));
+        check(sdq_write(&sdq, fd));
+
+        check(close(fd));
+        free(title);
+        free(body);
+        sdq_free(&sdq);
     }
 
     else if (!strcmp(argv[1], "clear")) {

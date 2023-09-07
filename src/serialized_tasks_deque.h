@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "log.h"
 
@@ -26,7 +27,7 @@ void sdq_free(SerializedDeque *sdq) {
 char *sdq_get_path(void) {
     const char *HOME = getenv("HOME");
     const int HOME_SIZE = strlen(HOME);
-    const int FILENAME_SIZE = strlen("./tododq");
+    const int FILENAME_SIZE = strlen("/.tododq");
 
     char *path = malloc(sizeof(char)*(HOME_SIZE + FILENAME_SIZE + 1));
     if (path == NULL) return NULL;
@@ -122,6 +123,43 @@ int sdq_push_front(SerializedDeque *sdq, const char *title, const char *body) {
     return 0;
 }
 
+
+int sdq_push_back(SerializedDeque *sdq, const char *title, const char *body) {
+    const int TITLE_SIZE = strlen(title) + 1;
+    const int BODY_SIZE = strlen(body) + 1;
+
+    if (sdq->size) {
+        const int NEW_BUF_SIZE = sdq->size + TITLE_SIZE + BODY_SIZE;
+
+        char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
+        if (new_buf == NULL) return -1;
+
+        memcpy(new_buf, sdq->buf, sdq->size - 1);
+        strncpy(new_buf + sdq->size - 1, title, TITLE_SIZE);
+        strncpy(new_buf + sdq->size - 1 + TITLE_SIZE, body, BODY_SIZE);
+        new_buf[NEW_BUF_SIZE - 1] = EOF;
+
+        free(sdq->buf);
+        sdq->buf = new_buf;
+        sdq->size = NEW_BUF_SIZE;
+    }
+    else {
+        const int NEW_BUF_SIZE = TITLE_SIZE + BODY_SIZE + 1;
+
+        char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
+        if (new_buf == NULL) return -1;
+
+        strncpy(new_buf, title, TITLE_SIZE);
+        strncpy(new_buf + TITLE_SIZE, body, BODY_SIZE);
+        new_buf[NEW_BUF_SIZE - 1] = EOF;
+
+        sdq->buf = new_buf;
+        sdq->size = NEW_BUF_SIZE;
+    }
+
+    return 0;
+}
+
 int sdq_clear(void) {
     char *filepath = sdq_get_path();
     if (filepath == NULL) return -1;
@@ -129,23 +167,5 @@ int sdq_clear(void) {
     free(filepath);
     return close(fd);
 }
-
-/* char *get_serialized_deque(int fd, off_t nbytes) {
-    char *buf = malloc(sizeof(char)*nbytes);
-    if (buf == NULL || read(fd, buf, nbytes) == -1)
-
-    return buf;
-} */
-
-
-
-
-/* typedef struct Task {
-    char *title;
-    char *body;
-} Task; */
-
-
-
 
 #endif
