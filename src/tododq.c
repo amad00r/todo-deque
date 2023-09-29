@@ -123,9 +123,8 @@ int main(int argc, char **argv) {
 
             assert(0);
         }
+
+        else fail("unexpected action\n"
+                  "use `tododq -h to list all the possible actions`");
     }
-
-
-    fail("unexpected action\n"
-         "use `tododq -h to list all the possible actions`");
 }
