@@ -54,6 +54,14 @@ int sdq_rdwr_open(void) {
     return fd;
 }
 
+int sdq_clear(void) {
+    char *filepath = sdq_get_path();
+    if (filepath == NULL) return -1;
+    int fd = open(filepath, O_WRONLY | O_TRUNC);
+    free(filepath);
+    return close(fd);
+}
+
 off_t sdq_count_file_bytes(int fd) {
     off_t nbytes = lseek(fd, 0, SEEK_END);
     if (lseek(fd, 0, SEEK_SET) == -1) return -1;
@@ -98,6 +106,7 @@ int sdq_push_front(SerializedDeque *sdq, const char *title, const char *body) {
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
 
+        // TODO: use memcpy
         strncpy(new_buf, title, TITLE_SIZE);
         strncpy(new_buf + TITLE_SIZE, body, BODY_SIZE);
         memcpy(new_buf + TITLE_SIZE + BODY_SIZE, sdq->buf, sdq->size);
@@ -134,6 +143,7 @@ int sdq_push_back(SerializedDeque *sdq, const char *title, const char *body) {
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
 
+        // TODO: use memcpy
         memcpy(new_buf, sdq->buf, sdq->size - 1);
         strncpy(new_buf + sdq->size - 1, title, TITLE_SIZE);
         strncpy(new_buf + sdq->size - 1 + TITLE_SIZE, body, BODY_SIZE);
@@ -160,12 +170,33 @@ int sdq_push_back(SerializedDeque *sdq, const char *title, const char *body) {
     return 0;
 }
 
-int sdq_clear(void) {
-    char *filepath = sdq_get_path();
-    if (filepath == NULL) return -1;
-    int fd = open(filepath, O_WRONLY | O_TRUNC);
-    free(filepath);
-    return close(fd);
+int sdq_pop(SerializedDeque *sdq) {
+    char *tmp = sdq->buf;
+    int tmp_size = sdq->size;
+    printf("%d\n", tmp_size);
+    int null_flag = 2;
+    while (null_flag) {
+        null_flag -= (*tmp++ == '\0');
+        --tmp_size;
+    }
+    printf("%d\n", tmp_size);
+
+    if (*tmp == EOF) {
+        free(sdq->buf);
+        sdq->buf = NULL;
+        sdq->size = 0;
+    }
+    else {
+        char *new_buf = malloc(sizeof(char)*tmp_size);
+        if (new_buf == NULL) return -1;
+        memcpy(new_buf, tmp, tmp_size);
+
+        free(sdq->buf);
+        sdq->buf = new_buf;
+        sdq->size = tmp_size;
+    }
+
+    return 0;
 }
 
 #endif
