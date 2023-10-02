@@ -72,9 +72,8 @@ int sdq_read(SerializedDeque *sdq, int fd) {
     off_t nbytes = sdq_count_file_bytes(fd);
     if (nbytes == -1) return -1;
     if (nbytes) {
-        sdq->size = nbytes + 1;
-        if ((sdq->buf = malloc(sizeof(char)*(sdq->size))) == NULL) return -1;
-        sdq->buf[nbytes] = EOF;
+        sdq->size = nbytes;
+        if ((sdq->buf = malloc(sizeof(char)*nbytes)) == NULL) return -1;
         return read(fd, sdq->buf, nbytes);
     }
     else {
@@ -85,86 +84,71 @@ int sdq_read(SerializedDeque *sdq, int fd) {
 
 int sdq_write(SerializedDeque *sdq, int fd) {
     lseek(fd, 0, SEEK_SET);
-    return write(fd, sdq->buf, sdq->size - 1);
+    return write(fd, sdq->buf, sdq->size);
 }
 
-void sdq_print_front(SerializedDeque *sdq) {
+/* void sdq_print_front(SerializedDeque *sdq) {
     puts(sdq->buf);
     int title_size = strlen(sdq->buf);
     for (int i = 0; i < title_size; ++i) putchar('@');
     putchar('\n');
     puts(sdq->buf + title_size + 1);
-}
+} */
 
-int sdq_push_front(SerializedDeque *sdq, const char *title, const char *body) {
-    const int TITLE_SIZE = strlen(title) + 1;
-    const int BODY_SIZE = strlen(body) + 1;
+int sdq_push_front(SerializedDeque *sdq, const char *task) {
+    const int TASK_SIZE = strlen(task) + 1;
 
     if (sdq->size) {
-        const int NEW_BUF_SIZE = sdq->size + TITLE_SIZE + BODY_SIZE;
+        const int NEW_BUF_SIZE = sdq->size + TASK_SIZE;
 
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
 
-        // TODO: use memcpy
-        strncpy(new_buf, title, TITLE_SIZE);
-        strncpy(new_buf + TITLE_SIZE, body, BODY_SIZE);
-        memcpy(new_buf + TITLE_SIZE + BODY_SIZE, sdq->buf, sdq->size);
+        memcpy(new_buf, task, TASK_SIZE);
+        memcpy(new_buf + TASK_SIZE, sdq->buf, sdq->size);
 
         free(sdq->buf);
         sdq->buf = new_buf;
         sdq->size = NEW_BUF_SIZE;
     }
     else {
-        const int NEW_BUF_SIZE = TITLE_SIZE + BODY_SIZE + 1;
-
-        char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
+        char *new_buf = malloc(sizeof(char)*TASK_SIZE);
         if (new_buf == NULL) return -1;
 
-        strncpy(new_buf, title, TITLE_SIZE);
-        strncpy(new_buf + TITLE_SIZE, body, BODY_SIZE);
-        new_buf[NEW_BUF_SIZE - 1] = EOF;
+        memcpy(new_buf, task, TASK_SIZE);
 
         sdq->buf = new_buf;
-        sdq->size = NEW_BUF_SIZE;
+        sdq->size = TASK_SIZE;
     }
     
     return 0;
 }
 
 
-int sdq_push_back(SerializedDeque *sdq, const char *title, const char *body) {
-    const int TITLE_SIZE = strlen(title) + 1;
-    const int BODY_SIZE = strlen(body) + 1;
+int sdq_push_back(SerializedDeque *sdq, const char *task) {
+    const int TASK_SIZE = strlen(task) + 1;
 
     if (sdq->size) {
-        const int NEW_BUF_SIZE = sdq->size + TITLE_SIZE + BODY_SIZE;
+        const int NEW_BUF_SIZE = sdq->size + TASK_SIZE;
 
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
 
-        // TODO: use memcpy
-        memcpy(new_buf, sdq->buf, sdq->size - 1);
-        strncpy(new_buf + sdq->size - 1, title, TITLE_SIZE);
-        strncpy(new_buf + sdq->size - 1 + TITLE_SIZE, body, BODY_SIZE);
-        new_buf[NEW_BUF_SIZE - 1] = EOF;
+        memcpy(new_buf, sdq->buf, sdq->size);
+        memcpy(new_buf + sdq->size, task, TASK_SIZE);
 
         free(sdq->buf);
         sdq->buf = new_buf;
         sdq->size = NEW_BUF_SIZE;
     }
     else {
-        const int NEW_BUF_SIZE = TITLE_SIZE + BODY_SIZE + 1;
-
-        char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
+        char *new_buf = malloc(sizeof(char)*TASK_SIZE);
         if (new_buf == NULL) return -1;
 
-        strncpy(new_buf, title, TITLE_SIZE);
-        strncpy(new_buf + TITLE_SIZE, body, BODY_SIZE);
-        new_buf[NEW_BUF_SIZE - 1] = EOF;
+        memcpy(new_buf, task, TASK_SIZE);
 
         sdq->buf = new_buf;
-        sdq->size = NEW_BUF_SIZE;
+        sdq->size = TASK_SIZE;
     }
 
     return 0;
@@ -173,20 +157,10 @@ int sdq_push_back(SerializedDeque *sdq, const char *title, const char *body) {
 int sdq_pop(SerializedDeque *sdq) {
     char *tmp = sdq->buf;
     int tmp_size = sdq->size;
-    printf("%d\n", tmp_size);
-    int null_flag = 2;
-    while (null_flag) {
-        null_flag -= (*tmp++ == '\0');
-        --tmp_size;
-    }
-    printf("%d\n", tmp_size);
+    do --tmp_size;
+    while (*tmp++ != '\0');
 
-    if (*tmp == EOF) {
-        free(sdq->buf);
-        sdq->buf = NULL;
-        sdq->size = 0;
-    }
-    else {
+    if (tmp_size) {
         char *new_buf = malloc(sizeof(char)*tmp_size);
         if (new_buf == NULL) return -1;
         memcpy(new_buf, tmp, tmp_size);
@@ -194,6 +168,11 @@ int sdq_pop(SerializedDeque *sdq) {
         free(sdq->buf);
         sdq->buf = new_buf;
         sdq->size = tmp_size;
+    }
+    else {
+        free(sdq->buf);
+        sdq->buf = NULL;
+        sdq->size = 0;
     }
 
     return 0;

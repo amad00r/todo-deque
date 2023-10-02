@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
         check(sdq_read(&sdq, fd));
 
         if (sdq.size) {
-            sdq_print_front(&sdq);
+            puts(sdq.buf);
             sdq_free(&sdq);
             check(close(fd)); 
             return EXIT_SUCCESS;
@@ -40,26 +40,17 @@ int main(int argc, char **argv) {
             int fd = check(sdq_rdwr_open());
 
             size_t size;
-
-            fputs("(title): ", stdout);
-            char *title = NULL;
-            check(getline(&title, &size, stdin));
-
-            puts("(body):");
-            char *body = NULL;
-            check(getdelim(&body, &size, EOF, stdin));
-
-            title = check_null(strip(title));
-            body = check_null(strip(body));
+            char *task = NULL;
+            check(getdelim(&task, &size, EOF, stdin));
+            task = check_null(strip(task));
 
             SerializedDeque sdq;
             check(sdq_read(&sdq, fd));
-            check(sdq_push_front(&sdq, title, body));
+            check(sdq_push_front(&sdq, task));
             check(sdq_write(&sdq, fd));
 
             check(close(fd));
-            free(title);
-            free(body);
+            free(task);
             sdq_free(&sdq);
         }
 
@@ -69,26 +60,17 @@ int main(int argc, char **argv) {
             int fd = check(sdq_rdwr_open());
 
             size_t size;
-
-            fputs("(title): ", stdout);
-            char *title = NULL;
-            check(getline(&title, &size, stdin));
-
-            puts("(body):");
-            char *body = NULL;
-            check(getdelim(&body, &size, EOF, stdin));
-
-            title = check_null(strip(title));
-            body = check_null(strip(body));
+            char *task = NULL;
+            check(getdelim(&task, &size, EOF, stdin));
+            task = check_null(strip(task));
 
             SerializedDeque sdq;
             check(sdq_read(&sdq, fd));
-            check(sdq_push_back(&sdq, title, body));
+            check(sdq_push_back(&sdq, task));
             check(sdq_write(&sdq, fd));
 
             check(close(fd));
-            free(title);
-            free(body);
+            free(task);
             sdq_free(&sdq);
         }
 
