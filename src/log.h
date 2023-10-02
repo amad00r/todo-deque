@@ -20,8 +20,8 @@ void usage(void) {
     puts(
         "Usage:\n"
         "    tododq\n"
-        "    tododq pushf\n"
-        "    tododq pushb\n"
+        "    tododq pushf [TASK1, TASK2, ...]\n"
+        "    tododq pushb [TASK1, TASK2, ...]\n"
         "    tododq complete\n"
         "    tododq clear\n"
         "    tododq slide"

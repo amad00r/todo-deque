@@ -35,42 +35,50 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "pushf")) {
-            if (argc != 2) fail("unexpected number of arguments");
-
             int fd = check(sdq_rdwr_open());
-
-            size_t size;
-            char *task = NULL;
-            check(getdelim(&task, &size, EOF, stdin));
-            task = check_null(strip(task));
 
             SerializedDeque sdq;
             check(sdq_read(&sdq, fd));
-            check(sdq_push_front(&sdq, task));
+
+            if (argc == 2) {
+                size_t size;
+                char *task = NULL;
+                check(getdelim(&task, &size, EOF, stdin));
+                task = check_null(strip(task));
+                check(sdq_push_front(&sdq, task));
+                free(task);
+            }
+            else
+                for (int i = 2; i < argc; ++i)
+                    check(sdq_push_front(&sdq, argv[i]));
+
             check(sdq_write(&sdq, fd));
 
             check(close(fd));
-            free(task);
             sdq_free(&sdq);
         }
 
         else if (!strcmp(action_arg, "pushb")) {
-            if (argc != 2) fail("unexpected number of arguments");
-
             int fd = check(sdq_rdwr_open());
-
-            size_t size;
-            char *task = NULL;
-            check(getdelim(&task, &size, EOF, stdin));
-            task = check_null(strip(task));
 
             SerializedDeque sdq;
             check(sdq_read(&sdq, fd));
-            check(sdq_push_back(&sdq, task));
+
+            if (argc == 2) {
+                size_t size;
+                char *task = NULL;
+                check(getdelim(&task, &size, EOF, stdin));
+                task = check_null(strip(task));
+                check(sdq_push_back(&sdq, task));
+                free(task);
+            }
+            else
+                for (int i = 2; i < argc; ++i)
+                    check(sdq_push_back(&sdq, argv[i]));
+
             check(sdq_write(&sdq, fd));
 
             check(close(fd));
-            free(task);
             sdq_free(&sdq);
         }
 
@@ -95,6 +103,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "clear")) {
+            assert(0 && "TODO: add confirmation message");
             if (argc != 2) fail("unexpected number of arguments");
 
             check(sdq_clear());
