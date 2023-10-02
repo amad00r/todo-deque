@@ -178,4 +178,23 @@ int sdq_pop(SerializedDeque *sdq) {
     return 0;
 }
 
+int sdq_slide(SerializedDeque *sdq) {
+    char *tmp = sdq->buf;
+    int tmp_size = sdq->size;
+    do --tmp_size;
+    while (*tmp++ != '\0');
+
+    if (tmp_size) {
+        char *new_buf = malloc(sizeof(char)*sdq->size);
+        if (new_buf == NULL) return -1;
+        memcpy(new_buf, tmp, tmp_size);
+        memcpy(new_buf + tmp_size, sdq->buf, sdq->size - tmp_size);
+
+        free(sdq->buf);
+        sdq->buf = new_buf;
+    }
+
+    return 0;
+}
+
 #endif

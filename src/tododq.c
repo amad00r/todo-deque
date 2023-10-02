@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
             }
 
             fail("todo deque is empty :)\n"
-                "use `tododq -h` to learn how to add a task");       
+                 "use `tododq -h` to learn how to add a task");       
         }
 
         else if (!strcmp(action_arg, "clear")) {
@@ -103,7 +103,20 @@ int main(int argc, char **argv) {
         else if (!strcmp(action_arg, "slide")) {
             if (argc != 2) fail("unexpected number of arguments");
 
-            assert(0);
+            int fd = check(sdq_rdwr_open());
+
+            SerializedDeque sdq;
+            check(sdq_read(&sdq, fd));
+            if (sdq.size) {
+                check(sdq_slide(&sdq));
+                check(sdq_write(&sdq, fd));
+                check(close(fd));
+                sdq_free(&sdq);
+                return EXIT_SUCCESS;
+            }
+
+            fail("todo deque is empty :)\n"
+                 "use `tododq -h` to learn how to add a task");
         }
 
         else fail("unexpected action\n"
