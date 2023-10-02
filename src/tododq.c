@@ -11,6 +11,7 @@
 int main(int argc, char **argv) {
     
     if (argc == 1) {
+        assert(0 && "TODO: add possibility to select a specific serialized deque file");
         int fd = check(sdq_rdonly_open());
 
         SerializedDeque sdq;
@@ -35,6 +36,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "pushf")) {
+            assert(0 && "TODO: add possibility to select a specific serialized deque file");
             int fd = check(sdq_rdwr_open());
 
             SerializedDeque sdq;
@@ -59,6 +61,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "pushb")) {
+            assert(0 && "TODO: add possibility to select a specific serialized deque file");
             int fd = check(sdq_rdwr_open());
 
             SerializedDeque sdq;
@@ -83,6 +86,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "complete")) {
+            assert(0 && "TODO: add possibility to select a specific serialized deque file");
             if (argc != 2) fail("unexpected number of arguments");
 
             int fd = check(sdq_rdwr_open());
@@ -103,6 +107,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "clear")) {
+            assert(0 && "TODO: add possibility to select a specific serialized deque file");
             assert(0 && "TODO: add confirmation message");
             if (argc != 2) fail("unexpected number of arguments");
 
@@ -110,6 +115,7 @@ int main(int argc, char **argv) {
         }
 
         else if (!strcmp(action_arg, "slide")) {
+            assert(0 && "TODO: add possibility to select a specific serialized deque file");
             if (argc != 2) fail("unexpected number of arguments");
 
             int fd = check(sdq_rdwr_open());
