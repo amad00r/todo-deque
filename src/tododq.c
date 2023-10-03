@@ -8,11 +8,20 @@
 #include "error_handling.h"
 
 
+int is_help_option(const char *str) {
+    return !strcmp(str, "-h") || !strcmp(str, "--help");
+}
+
+int is_file_option(const char *str) {
+    return !strcmp(str, "-f") || !strcmp(str, "--file");
+}
+
 int main(int argc, char **argv) {
+    char *arg1 = argv[1];
+    int cmp;
     
-    if (argc == 1) {
-        assert(0 && "TODO: add possibility to select a specific serialized deque file");
-        int fd = check(sdq_rdonly_open());
+    if ((cmp = argc == 1) || (argc == 3 && is_file_option(arg1))) {
+        int fd = check(sdq_rdonly_open(cmp ? NULL : argv[2]));
 
         SerializedDeque sdq;
         check(sdq_read(&sdq, fd));
@@ -27,114 +36,100 @@ int main(int argc, char **argv) {
         info("todo deque is empty :)\n"
              "use `tododq -h` to learn how to add a task");
     }
-    else {
-        char *action_arg = argv[1];
 
-        if (!strcmp(action_arg, "-h") || !strcmp(action_arg, "--help")) {
-            if (argc != 2) fail("unexpected number of arguments");
-            usage();
-        }
-
-        else if (!strcmp(action_arg, "pushf")) {
-            assert(0 && "TODO: add possibility to select a specific serialized deque file");
-            int fd = check(sdq_rdwr_open());
-
-            SerializedDeque sdq;
-            check(sdq_read(&sdq, fd));
-
-            if (argc == 2) {
-                size_t size;
-                char *task = NULL;
-                check(getdelim(&task, &size, EOF, stdin));
-                task = check_null(strip(task));
-                check(sdq_push_front(&sdq, task));
-                free(task);
-            }
-            else
-                for (int i = 2; i < argc; ++i)
-                    check(sdq_push_front(&sdq, argv[i]));
-
-            check(sdq_write(&sdq, fd));
-
-            check(close(fd));
-            sdq_free(&sdq);
-        }
-
-        else if (!strcmp(action_arg, "pushb")) {
-            assert(0 && "TODO: add possibility to select a specific serialized deque file");
-            int fd = check(sdq_rdwr_open());
-
-            SerializedDeque sdq;
-            check(sdq_read(&sdq, fd));
-
-            if (argc == 2) {
-                size_t size;
-                char *task = NULL;
-                check(getdelim(&task, &size, EOF, stdin));
-                task = check_null(strip(task));
-                check(sdq_push_back(&sdq, task));
-                free(task);
-            }
-            else
-                for (int i = 2; i < argc; ++i)
-                    check(sdq_push_back(&sdq, argv[i]));
-
-            check(sdq_write(&sdq, fd));
-
-            check(close(fd));
-            sdq_free(&sdq);
-        }
-
-        else if (!strcmp(action_arg, "complete")) {
-            assert(0 && "TODO: add possibility to select a specific serialized deque file");
-            if (argc != 2) fail("unexpected number of arguments");
-
-            int fd = check(sdq_rdwr_open());
-
-            SerializedDeque sdq;
-            check(sdq_read(&sdq, fd));
-            if (sdq.size) {
-                check(sdq_pop(&sdq));
-                check(sdq_clear());
-                check(sdq_write(&sdq, fd));
-                check(close(fd));
-                sdq_free(&sdq);
-                return EXIT_SUCCESS;
-            }
-
-            fail("todo deque is empty :)\n"
-                 "use `tododq -h` to learn how to add a task");       
-        }
-
-        else if (!strcmp(action_arg, "clear")) {
-            assert(0 && "TODO: add possibility to select a specific serialized deque file");
-            assert(0 && "TODO: add confirmation message");
-            if (argc != 2) fail("unexpected number of arguments");
-
-            check(sdq_clear());
-        }
-
-        else if (!strcmp(action_arg, "slide")) {
-            assert(0 && "TODO: add possibility to select a specific serialized deque file");
-            if (argc != 2) fail("unexpected number of arguments");
-
-            int fd = check(sdq_rdwr_open());
-
-            SerializedDeque sdq;
-            check(sdq_read(&sdq, fd));
-            if (sdq.size) {
-                check(sdq_slide(&sdq));
-                check(sdq_write(&sdq, fd));
-                check(close(fd));
-                sdq_free(&sdq);
-                return EXIT_SUCCESS;
-            }
-
-            fail("todo deque is empty :)\n"
-                 "use `tododq -h` to learn how to add a task");
-        }
-
-        else fail("unexpected action\n"
-                  "use `tododq -h to list all the possible actions`");
+    else if (is_help_option(arg1)) {
+        if (argc != 2) fail("unexpected number of arguments");
+        usage();
     }
+
+    else if ((cmp = !strcmp(arg1, "pushf")) || !strcmp(arg1, "pushb")) {
+        assert(0 && "TODO: add possibility to select a specific serialized deque file");
+        int fd = check(sdq_rdwr_open(NULL));
+
+        SerializedDeque sdq;
+        check(sdq_read(&sdq, fd));
+
+        if (argc == 2) {
+            size_t size;
+            char *task = NULL;
+            check(getdelim(&task, &size, EOF, stdin));
+            task = check_null(strip(task));
+            check(cmp ? sdq_push_front(&sdq, task) : sdq_push_back(&sdq, task));
+            free(task);
+        }
+        else
+            for (int i = 2; i < argc; ++i)
+                check(sdq_push_front(&sdq, argv[i]));
+
+        check(sdq_write(&sdq, fd));
+
+        check(close(fd));
+        sdq_free(&sdq);
+    }
+
+    else if (!strcmp(arg1, "complete")) {
+        int fd;
+        if (argc == 2)
+            fd = check(sdq_rdwr_open(NULL));
+        else if (argc == 4 && is_file_option(argv[2]))
+            fd = check(sdq_rdwr_open(argv[3]));
+        else 
+            fail("unexpected arguments");
+
+        SerializedDeque sdq;
+        check(sdq_read(&sdq, fd));
+        if (sdq.size) {
+            check(sdq_pop(&sdq));
+            check(sdq_clear());
+            check(sdq_write(&sdq, fd));
+            check(close(fd));
+            sdq_free(&sdq);
+            return EXIT_SUCCESS;
+        }
+
+        fail("todo deque is empty :)\n"
+                "use `tododq -h` to learn how to add a task");       
+    }
+
+    else if (!strcmp(arg1, "clear")) {
+        assert(0 && "TODO: add confirmation message");
+        int fd;
+        if (argc == 2) {
+            char *sdq_path = sdq_get_path();
+            check(sdq_clear(sdq_path));
+            free(sdq_path);
+        }
+        else if (argc == 4 && is_file_option(argv[2]))
+            check(sdq_clear(argv[3]));
+        else
+            fail("unexpected arguments");
+    }
+
+    else if (!strcmp(arg1, "slide")) {
+        int fd;
+        if (argc == 2)
+            fd = check(sdq_rdwr_open(NULL));
+        else if (argc == 4 && is_file_option(argv[2]))
+            fd = check(sdq_rdwr_open(argv[3]));
+        else 
+            fail("unexpected arguments");
+
+        SerializedDeque sdq;
+        check(sdq_read(&sdq, fd));
+        if (sdq.size) {
+            check(sdq_slide(&sdq));
+            check(sdq_write(&sdq, fd));
+            check(close(fd));
+            sdq_free(&sdq);
+            return EXIT_SUCCESS;
+        }
+
+        fail("todo deque is empty :)\n"
+                "use `tododq -h` to learn how to add a task");
+    }
+
+    else fail("unexpected action\n"
+                "use `tododq -h to list all the possible actions`");
+
+    return EXIT_SUCCESS;
 }

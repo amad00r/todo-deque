@@ -38,28 +38,34 @@ char *sdq_get_path(void) {
     return path;
 }
 
-int sdq_rdonly_open(void) {
-    char *filepath = sdq_get_path();
-    if (filepath == NULL) return -1;
-    int fd = open(filepath, O_RDONLY | O_CREAT, S_IRWXU);
-    free(filepath);
-    return fd;
+int __sdq_open(const char *sdq_path, int open_mode) {
+    int fd;
+    if (sdq_path == NULL) {
+        if ((sdq_path = sdq_get_path()) == NULL) return -1;
+        fd = open(sdq_path, open_mode | O_CREAT, S_IRWXU);
+        free(sdq_path);
+        return fd == -1 ? -1 : close(fd);
+    }
+    return (fd = open(sdq_path, open_mode | O_CREAT, S_IRWXU)) == -1 ? -1 : close(fd);
 }
 
-int sdq_rdwr_open(void) {
-    char *filepath = sdq_get_path();
-    if (filepath == NULL) return -1;
-    int fd = open(filepath, O_RDWR | O_CREAT, S_IRWXU);
-    free(filepath);
-    return fd;
+int sdq_rdonly_open(char *sdq_path) {
+    return __sdq_open(sdq_path, O_RDONLY);
 }
 
-int sdq_clear(void) {
-    char *filepath = sdq_get_path();
-    if (filepath == NULL) return -1;
-    int fd = open(filepath, O_WRONLY | O_TRUNC);
-    free(filepath);
-    return close(fd);
+int sdq_rdwr_open(char *sdq_path) {
+    return __sdq_open(sdq_path, O_RDWR);
+}
+
+int sdq_clear(char *sdq_path) {
+    int fd;
+    if (sdq_path == NULL) {
+        if ((sdq_path = sdq_get_path()) == NULL) return -1;
+        fd = open(sdq_path, O_WRONLY | O_TRUNC);
+        free(sdq_path);
+        return fd == -1 ? -1 : close(fd);
+    }
+    return (fd = open(sdq_path, O_WRONLY | O_TRUNC)) == -1 ? -1 : close(fd);
 }
 
 off_t sdq_count_file_bytes(int fd) {
@@ -86,14 +92,6 @@ int sdq_write(SerializedDeque *sdq, int fd) {
     lseek(fd, 0, SEEK_SET);
     return write(fd, sdq->buf, sdq->size);
 }
-
-/* void sdq_print_front(SerializedDeque *sdq) {
-    puts(sdq->buf);
-    int title_size = strlen(sdq->buf);
-    for (int i = 0; i < title_size; ++i) putchar('@');
-    putchar('\n');
-    puts(sdq->buf + title_size + 1);
-} */
 
 int sdq_push_front(SerializedDeque *sdq, const char *task) {
     const int TASK_SIZE = strlen(task) + 1;
