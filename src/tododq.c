@@ -68,19 +68,18 @@ int main(int argc, char **argv) {
     }
 
     else if (!strcmp(arg1, "complete")) {
-        int fd;
-        if (argc == 2)
-            fd = check(sdq_rdwr_open(NULL));
-        else if (argc == 4 && is_file_option(argv[2]))
-            fd = check(sdq_rdwr_open(argv[3]));
-        else 
-            fail("unexpected arguments");
+        char *sdq_path;
+        if (argc == 2) sdq_path = NULL;
+        else if (argc == 4 && is_file_option(argv[2])) sdq_path = argv[3];
+        else fail("unexpected arguments");
 
+        int fd = check(sdq_rdwr_open(sdq_path));
+ 
         SerializedDeque sdq;
         check(sdq_read(&sdq, fd));
         if (sdq.size) {
             check(sdq_pop(&sdq));
-            check(sdq_clear());
+            check(sdq_clear(sdq_path));
             check(sdq_write(&sdq, fd));
             check(close(fd));
             sdq_free(&sdq);
@@ -93,16 +92,9 @@ int main(int argc, char **argv) {
 
     else if (!strcmp(arg1, "clear")) {
         assert(0 && "TODO: add confirmation message");
-        int fd;
-        if (argc == 2) {
-            char *sdq_path = sdq_get_path();
-            check(sdq_clear(sdq_path));
-            free(sdq_path);
-        }
-        else if (argc == 4 && is_file_option(argv[2]))
-            check(sdq_clear(argv[3]));
-        else
-            fail("unexpected arguments");
+        if (argc == 2) check(sdq_clear(NULL));
+        else if (argc == 4 && is_file_option(argv[2])) check(sdq_clear(argv[3]));
+        else fail("unexpected arguments");
     }
 
     else if (!strcmp(arg1, "slide")) {

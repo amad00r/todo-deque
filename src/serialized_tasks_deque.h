@@ -38,7 +38,7 @@ char *sdq_get_path(void) {
     return path;
 }
 
-int __sdq_open(const char *sdq_path, int open_mode) {
+int __sdq_open(char *sdq_path, int open_mode) {
     int fd;
     if (sdq_path == NULL) {
         if ((sdq_path = sdq_get_path()) == NULL) return -1;
