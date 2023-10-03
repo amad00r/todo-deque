@@ -91,9 +91,16 @@ int main(int argc, char **argv) {
     }
 
     else if (!strcmp(arg1, "clear")) {
-        assert(0 && "TODO: add confirmation message");
-        if (argc == 2) check(sdq_clear(NULL));
-        else if (argc == 4 && is_file_option(argv[2])) check(sdq_clear(argv[3]));
+        assert(0 && "TODO: add -y option to slip confirmation");
+        if ((cmp = argc == 2) || (argc == 4 && is_file_option(argv[2]))) {
+            size_t size;
+            char *confirmation = NULL;
+            fputs("Are you sure you want to clear the specified serialized todo deque? [y/n]: ", stdout);
+            check(getline(&confirmation, &size, stdin));
+            if (strcmp(check_null(strip(confirmation)), "y")) return EXIT_FAILURE;
+
+            check(sdq_clear(cmp ? NULL : argv[3]));
+        }
         else fail("unexpected arguments");
     }
 
