@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
     }
 
     else if ((cmp = !strcmp(arg1, "pushf")) || !strcmp(arg1, "pushb")) {
-        assert(0 && "TODO: add possibility to select a specific serialized deque file");
+        // TODO: add possibility to select a specific serialized deque file
         int fd = check(sdq_rdwr_open(NULL));
 
         SerializedDeque sdq;
@@ -87,11 +87,11 @@ int main(int argc, char **argv) {
         }
 
         fail("todo deque is empty :)\n"
-                "use `tododq -h` to learn how to add a task");       
+             "use `tododq -h` to learn how to add a task");       
     }
 
     else if (!strcmp(arg1, "clear")) {
-        assert(0 && "TODO: add -y option to slip confirmation");
+        // TODO: add -y option to slip confirmation
         if ((cmp = argc == 2) || (argc == 4 && is_file_option(argv[2]))) {
             size_t size;
             char *confirmation = NULL;
@@ -124,11 +124,11 @@ int main(int argc, char **argv) {
         }
 
         fail("todo deque is empty :)\n"
-                "use `tododq -h` to learn how to add a task");
+             "use `tododq -h` to learn how to add a task");
     }
 
     else fail("unexpected action\n"
-                "use `tododq -h to list all the possible actions`");
+              "use `tododq -h to list all the possible actions`");
 
     return EXIT_SUCCESS;
 }
