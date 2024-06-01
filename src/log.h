@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void fail(const char *msg) {
+_Noreturn void fail(const char *msg) {
     fputs("[ERROR] ", stderr);
     fputs(msg, stderr);
     putc('\n', stderr);

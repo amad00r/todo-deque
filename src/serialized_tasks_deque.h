@@ -3,19 +3,15 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <assert.h>
 
 #include "log.h"
 
 typedef struct SerializedDeque {
     char *buf;
-    unsigned int size;
+    size_t size;
 } SerializedDeque;
 
-void sdq_init(SerializedDeque *sdq, char *buf, unsigned int size) {
+void sdq_init(SerializedDeque *sdq, char *buf, size_t size) {
     sdq->buf = buf;
     sdq->size = size;
 }
@@ -38,49 +34,39 @@ char *sdq_get_path(void) {
     return path;
 }
 
-int __sdq_open(char *sdq_path, int open_mode) {
-    int fd;
-    if (sdq_path == NULL) {
-        if ((sdq_path = sdq_get_path()) == NULL) return -1;
-        fd = open(sdq_path, open_mode | O_CREAT, S_IRWXU);
-        free(sdq_path);
-        return fd == -1 ? -1 : close(fd);
-    }
-    return (fd = open(sdq_path, open_mode | O_CREAT, S_IRWXU)) == -1 ? -1 : close(fd);
+FILE *sdq_open(void) {
+    char *sdq_path = sdq_get_path();
+    if (sdq_path == NULL) return NULL;
+    
+    FILE *f = fopen(sdq_path, "r+");
+
+    free(sdq_path);
+    return f;
 }
 
-int sdq_rdonly_open(char *sdq_path) {
-    return __sdq_open(sdq_path, O_RDONLY);
+int sdq_clear(void) {
+    char *sdq_path = sdq_get_path();
+    if (sdq_path == NULL) return -1;
+
+    FILE *f = fopen(sdq_path, "w");
+    if (f == NULL) return -1;
+
+    free(sdq_path);
+    return fclose(f);
 }
 
-int sdq_rdwr_open(char *sdq_path) {
-    return __sdq_open(sdq_path, O_RDWR);
-}
+size_t sdq_read(SerializedDeque *sdq, FILE *f) {
+    if (fseek(f, 0L, SEEK_END) < 0) return -1;
+    long nbytes = ftell(f);
+    rewind(f);
+    if (nbytes < 0) return -1;
 
-int sdq_clear(char *sdq_path) {
-    int fd;
-    if (sdq_path == NULL) {
-        if ((sdq_path = sdq_get_path()) == NULL) return -1;
-        fd = open(sdq_path, O_WRONLY | O_TRUNC);
-        free(sdq_path);
-        return fd == -1 ? -1 : close(fd);
-    }
-    return (fd = open(sdq_path, O_WRONLY | O_TRUNC)) == -1 ? -1 : close(fd);
-}
-
-off_t sdq_count_file_bytes(int fd) {
-    off_t nbytes = lseek(fd, 0, SEEK_END);
-    if (lseek(fd, 0, SEEK_SET) == -1) return -1;
-    return nbytes;
-}
-
-int sdq_read(SerializedDeque *sdq, int fd) {
-    off_t nbytes = sdq_count_file_bytes(fd);
-    if (nbytes == -1) return -1;
     if (nbytes) {
         sdq->size = nbytes;
         if ((sdq->buf = malloc(sizeof(char)*nbytes)) == NULL) return -1;
-        return read(fd, sdq->buf, nbytes);
+        size_t r = fread(sdq->buf, sizeof(char), nbytes, f);
+        rewind(f);
+        return r;
     }
     else {
         sdq->buf = NULL;
@@ -88,16 +74,16 @@ int sdq_read(SerializedDeque *sdq, int fd) {
     }
 }
 
-int sdq_write(SerializedDeque *sdq, int fd) {
-    lseek(fd, 0, SEEK_SET);
-    return write(fd, sdq->buf, sdq->size);
+int sdq_write(SerializedDeque *sdq, FILE *f) {
+    rewind(f);
+    return fwrite(sdq->buf, sizeof(char), sdq->size, f);
 }
 
 int sdq_push_front(SerializedDeque *sdq, const char *task) {
-    const int TASK_SIZE = strlen(task) + 1;
+    const size_t TASK_SIZE = strlen(task) + 1;
 
     if (sdq->size) {
-        const int NEW_BUF_SIZE = sdq->size + TASK_SIZE;
+        const size_t NEW_BUF_SIZE = sdq->size + TASK_SIZE;
 
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
@@ -127,7 +113,7 @@ int sdq_push_back(SerializedDeque *sdq, const char *task) {
     const int TASK_SIZE = strlen(task) + 1;
 
     if (sdq->size) {
-        const int NEW_BUF_SIZE = sdq->size + TASK_SIZE;
+        const size_t NEW_BUF_SIZE = sdq->size + TASK_SIZE;
 
         char *new_buf = malloc(sizeof(char)*NEW_BUF_SIZE);
         if (new_buf == NULL) return -1;
@@ -154,11 +140,11 @@ int sdq_push_back(SerializedDeque *sdq, const char *task) {
 
 int sdq_pop(SerializedDeque *sdq) {
     char *tmp = sdq->buf;
-    int tmp_size = sdq->size;
+    size_t tmp_size = sdq->size;
     do --tmp_size;
     while (*tmp++ != '\0');
 
-    if (tmp_size) {
+    if (tmp_size > 0) {
         char *new_buf = malloc(sizeof(char)*tmp_size);
         if (new_buf == NULL) return -1;
         memcpy(new_buf, tmp, tmp_size);
@@ -178,7 +164,7 @@ int sdq_pop(SerializedDeque *sdq) {
 
 int sdq_slide(SerializedDeque *sdq) {
     char *tmp = sdq->buf;
-    int tmp_size = sdq->size;
+    size_t tmp_size = sdq->size;
     do --tmp_size;
     while (*tmp++ != '\0');
 
